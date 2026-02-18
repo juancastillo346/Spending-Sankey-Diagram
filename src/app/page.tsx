@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { usePlaidLink } from "react-plaid-link";
 
 import { SankeyClient, type SankeyData } from "@/components/SankeyClient";
+import { PieClient } from "@/components/PieClient";
 import { DEFAULT_CATEGORIES, formatCategoryLabel, getCategoryColorMap } from "@/lib/categories";
 
 type DashboardResponse = {
@@ -72,6 +73,31 @@ export default function Home() {
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [chartView, setChartView] = useState<"sankey" | "pie">("sankey");
+  const [pieGroup, setPieGroup] = useState<"category" | "account">("category");
+
+  const pieSlices = useMemo(() => {
+    if (chartView !== "pie") return [] as { id: string; label: string; value: number; color?: string }[];
+    if (pieGroup === "category") {
+      const byCat = data?.totals.byCategory ?? [];
+      const labels = byCat.map((b) => formatCategoryLabel(b.category));
+      const colorMap = getCategoryColorMap(labels);
+      return byCat.map((b) => {
+        const label = formatCategoryLabel(b.category);
+        return { id: b.category, label, value: b.total, color: colorMap.get(label) ?? "#94a3b8" };
+      });
+    } else {
+      const byAcc = data?.totals.byAccount ?? [];
+      const labels = byAcc.map((a) => a.account);
+      const colorMap = getCategoryColorMap(labels);
+      return byAcc.map((a) => ({
+        id: a.account,
+        label: a.account,
+        value: a.total,
+        color: colorMap.get(a.account) ?? "#94a3b8",
+      }));
+    }
+  }, [data, chartView, pieGroup]);
 
   const refresh = useMemo(() => {
     return async (opts?: { month?: string; account?: string }) => {
@@ -216,6 +242,34 @@ export default function Home() {
             >
               Seed fake transactions
             </button>
+            <div className="ml-2 inline-flex rounded-md shadow-sm" role="tablist" aria-label="Chart view">
+              <button
+                className={`rounded-l-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900 ${chartView === "sankey" ? "ring-1 ring-zinc-300" : ""}`}
+                onClick={() => setChartView("sankey")}
+                aria-pressed={chartView === "sankey"}
+                disabled={busy}
+              >
+                Sankey
+              </button>
+              <button
+                className={`-ml-px rounded-r-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900 ${chartView === "pie" ? "ring-1 ring-zinc-300" : ""}`}
+                onClick={() => setChartView("pie")}
+                aria-pressed={chartView === "pie"}
+                disabled={busy}
+              >
+                Pie
+              </button>
+            </div>
+            {chartView === "pie" ? (
+              <select
+                value={pieGroup}
+                onChange={(e) => setPieGroup(e.target.value as "category" | "account")}
+                className="ml-3 rounded-md border border-zinc-200 bg-white px-2 py-1 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+              >
+                <option value="category">Group by category</option>
+                <option value="account">Group by account</option>
+              </select>
+            ) : null}
           </div>
         </div>
 
@@ -286,7 +340,11 @@ export default function Home() {
           </div>
 
           <div className="lg:col-span-12">
-            <SankeyClient data={data?.sankey ?? { nodes: [], links: [] }} />
+            {chartView === "sankey" ? (
+              <SankeyClient data={data?.sankey ?? { nodes: [], links: [] }} />
+            ) : (
+              <PieClient slices={pieSlices} />
+            )}
           </div>
 
           <div className="lg:col-span-12">

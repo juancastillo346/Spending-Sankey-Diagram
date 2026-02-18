@@ -68,6 +68,55 @@ export function SankeyClient({ data }: { data: SankeyData }) {
         linkHoverOthersOpacity={0.5}
         enableLinkGradient={true}
         linkBlendMode="normal"
+        layers={[
+          "links",
+          "nodes",
+          "labels",
+          (props: { links?: unknown }) => {
+            const links = props.links ?? [];
+            return (
+              <g pointerEvents="none">
+                {links.map((link, idx) => {
+                  const src = link.source;
+                  const tgt = link.target;
+                  if (!src || !tgt) return null;
+                  const srcRight = src.x1 ?? (src.x !== undefined && src.width !== undefined ? src.x + src.width : 0);
+                  const tgtLeft = tgt.x0 ?? tgt.x ?? 0;
+                  const midX = (srcRight + tgtLeft) / 2;
+                  const midY = ((link.pos0 ?? 0) + (link.pos1 ?? 0)) / 2;
+                  const text = `$${Number(link.value ?? 0).toFixed(2)}`;
+                  const paddingX = 10;
+                  const paddingY = 6;
+                  const rectWidth = Math.max(text.length * 8, 40) + paddingX * 2;
+                  const rectHeight = 18 + paddingY;
+                  return (
+                    <g key={idx} style={{ pointerEvents: "none", userSelect: "none" }}>
+                      <rect
+                        x={midX - rectWidth / 2}
+                        y={midY - rectHeight / 2}
+                        width={rectWidth}
+                        height={rectHeight}
+                        rx={8}
+                        fill="rgba(0,0,0,0.8)"
+                      />
+                      <text
+                        x={midX}
+                        y={midY}
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        fontSize={13}
+                        fontWeight={500}
+                        fill="#ffffff"
+                      >
+                        {text}
+                      </text>
+                    </g>
+                  );
+                })}
+              </g>
+            );
+          },
+        ]}
         label={(node) => (accountIds.has(node.id) ? node.id : formatCategoryLabel(node.id))}
         labelPosition="outside"
         labelOrientation="horizontal"
