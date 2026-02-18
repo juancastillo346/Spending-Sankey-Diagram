@@ -1,0 +1,84 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Item {
+  id         Int      @id @default(autoincrement())
+  plaidItemId String  @unique
+  accessToken String
+  cursor     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  accounts   Account[]
+}
+
+model Account {
+  id              Int      @id @default(autoincrement())
+  plaidAccountId  String   @unique
+  itemId          Int
+  name            String
+  officialName    String?
+  type            String
+  subtype         String?
+  mask            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  item            Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  transactions    Transaction[]
+
+  @@index([itemId])
+}
+
+model Transaction {
+  id                          Int      @id @default(autoincrement())
+  plaidTransactionId          String   @unique
+  accountId                   Int
+  date                        DateTime
+  authorizedDate              DateTime?
+  amount                      Decimal
+  isoCurrencyCode             String?
+  name                        String
+  merchantName                String?
+  originalDescription         String?
+  pending                     Boolean
+  pendingTransactionId        String?
+  personalFinanceCategoryPrimary  String?
+  personalFinanceCategoryDetailed String?
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  account                     Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  override                    CategoryOverride?
+
+  @@index([accountId])
+  @@index([date])
+}
+
+model CategoryOverride {
+  id            Int      @id @default(autoincrement())
+  transactionId Int      @unique
+  category      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+}
+
+model Rule {
+  id        Int      @id @default(autoincrement())
+  matchType String   // "contains" | "regex" (v1 implements contains)
+  pattern   String
+  category  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
