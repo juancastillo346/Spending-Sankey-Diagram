@@ -1,6 +1,18 @@
 "use client";
 
-import { ResponsivePie } from "@nivo/pie";
+import dynamic from "next/dynamic";
+
+const ResponsivePie = dynamic(
+  () => import("@nivo/pie").then((m) => m.ResponsivePie),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-[420px] items-center justify-center rounded-xl border border-zinc-200 bg-white text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+        Loading chart…
+      </div>
+    ),
+  },
+);
 
 import { formatCategoryLabel } from "@/lib/categories";
 
