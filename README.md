@@ -1,6 +1,7 @@
 ## IncomeManager (Sandbox-first)
 
 Local spending dashboard with a **Sankey chart** (account → category) powered by **Plaid Sandbox** data and stored locally in **SQLite**.
+<img width="748" height="803" alt="Screenshot 2026-02-23 at 12 35 33 AM" src="https://github.com/user-attachments/assets/f963f281-f429-47e2-be04-ff942854b397" />
 
 ### What you get
 - **Plaid Link** flow (Sandbox)
