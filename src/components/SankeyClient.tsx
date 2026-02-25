@@ -21,8 +21,9 @@ export type SankeyData = {
   links: Array<{ source: string; target: string; value: number }>;
 };
 
-// White for accounts
 const ACCOUNT_COLOR = "#FFFFFF";
+const SPENDING_NODE = "Spending";
+const SPENDING_COLOR = "#94a3b8"; // slate-400 neutral middle node
 
 export function SankeyClient({ data }: { data: SankeyData }) {
   if (!data.nodes.length || !data.links.length) {
@@ -33,11 +34,19 @@ export function SankeyClient({ data }: { data: SankeyData }) {
     );
   }
 
-  const accountIds = new Set(data.links.map((l) => l.source));
+  // Accounts = nodes that are sources but never targets (left column)
+  const allSources = new Set(data.links.map((l) => l.source));
+  const allTargets = new Set(data.links.map((l) => l.target));
+  const accountIds = new Set([...allSources].filter((id) => !allTargets.has(id)));
+
   let categoryIndex = 0;
 
   const nodeColorMap = new Map<string, string>();
   const nodeColors = data.nodes.map((node) => {
+    if (node.id === SPENDING_NODE) {
+      nodeColorMap.set(node.id, SPENDING_COLOR);
+      return SPENDING_COLOR;
+    }
     if (accountIds.has(node.id)) {
       nodeColorMap.set(node.id, ACCOUNT_COLOR);
       return ACCOUNT_COLOR;
@@ -129,14 +138,14 @@ export function SankeyClient({ data }: { data: SankeyData }) {
             );
           },
         ]}
-        label={(node) => (accountIds.has(node.id) ? node.id : formatCategoryLabel(node.id))}
+        label={(node) => (accountIds.has(node.id) || node.id === SPENDING_NODE ? node.id : formatCategoryLabel(node.id))}
         labelPosition="outside"
         labelOrientation="horizontal"
         labelPadding={10}
         labelTextColor={{ from: "color", modifiers: [["darker", 1.2]] }}
         nodeTooltip={({ node }) => (
           <div className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-            <div className="font-medium">{accountIds.has(node.id) ? node.id : formatCategoryLabel(node.id)}</div>
+            <div className="font-medium">{accountIds.has(node.id) || node.id === SPENDING_NODE ? node.id : formatCategoryLabel(node.id)}</div>
             <div className="text-zinc-600 dark:text-zinc-400">
               Total: ${Number(node.value ?? 0).toFixed(2)}
             </div>
@@ -145,7 +154,7 @@ export function SankeyClient({ data }: { data: SankeyData }) {
         linkTooltip={({ link }) => (
           <div className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
             <div className="font-medium">
-              {accountIds.has(link.source.id) ? link.source.id : formatCategoryLabel(link.source.id)} → {accountIds.has(link.target.id) ? link.target.id : formatCategoryLabel(link.target.id)}
+              {accountIds.has(link.source.id) || link.source.id === SPENDING_NODE ? link.source.id : formatCategoryLabel(link.source.id)} → {accountIds.has(link.target.id) || link.target.id === SPENDING_NODE ? link.target.id : formatCategoryLabel(link.target.id)}
             </div>
             <div className="text-zinc-600 dark:text-zinc-400">
               ${Number(link.value ?? 0).toFixed(2)}

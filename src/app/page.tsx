@@ -260,16 +260,14 @@ export default function Home() {
                 Pie
               </button>
             </div>
-            {chartView === "pie" ? (
-              <select
-                value={pieGroup}
-                onChange={(e) => setPieGroup(e.target.value as "category" | "account")}
-                className="ml-3 rounded-md border border-zinc-200 bg-white px-2 py-1 text-sm dark:border-zinc-800 dark:bg-zinc-950"
-              >
-                <option value="category">Group by category</option>
-                <option value="account">Group by account</option>
-              </select>
-            ) : null}
+            <select
+              value={pieGroup}
+              onChange={(e) => setPieGroup(e.target.value as "category" | "account")}
+              className={`ml-3 rounded-md border border-zinc-200 bg-white px-2 py-1 text-sm dark:border-zinc-800 dark:bg-zinc-950 ${chartView !== "pie" ? "invisible" : ""}`}
+            >
+              <option value="category">Group by category</option>
+              <option value="account">Group by account</option>
+            </select>
           </div>
         </div>
 

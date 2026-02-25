@@ -87,7 +87,10 @@ export async function GET(req: Request) {
 
     const byCategory = new Map<string, number>();
     const byAccount = new Map<string, number>();
-    const linkSums = new Map<string, number>(); // `${source}__${target}` -> value
+    const accountToSpending = new Map<string, number>(); // account -> total
+    const spendingToCategory = new Map<string, number>(); // category -> total
+
+    const SPENDING_NODE = "Spending";
 
     function accountLabel(a: { name: string; mask: string | null }): string {
       return a.mask ? `${a.name} •${a.mask}` : a.name;
@@ -104,18 +107,26 @@ export async function GET(req: Request) {
       byCategory.set(category, (byCategory.get(category) ?? 0) + amount);
       byAccount.set(source, (byAccount.get(source) ?? 0) + amount);
 
-      const key = `${source}__${category}`;
-      linkSums.set(key, (linkSums.get(key) ?? 0) + amount);
+      accountToSpending.set(source, (accountToSpending.get(source) ?? 0) + amount);
+      spendingToCategory.set(category, (spendingToCategory.get(category) ?? 0) + amount);
     }
 
     const sources = Array.from(byAccount.keys()).sort();
     const categories = Array.from(byCategory.keys()).sort();
-    const nodes = [...sources, ...categories].map((id) => ({ id }));
+    const nodes = [...sources, SPENDING_NODE, ...categories].map((id) => ({ id }));
 
-    const links = Array.from(linkSums.entries()).map(([key, value]) => {
-      const [source, target] = key.split("__");
-      return { source, target, value: Math.round(value * 100) / 100 };
-    });
+    const links = [
+      ...Array.from(accountToSpending.entries()).map(([account, value]) => ({
+        source: account,
+        target: SPENDING_NODE,
+        value: Math.round(value * 100) / 100,
+      })),
+      ...Array.from(spendingToCategory.entries()).map(([category, value]) => ({
+        source: SPENDING_NODE,
+        target: category,
+        value: Math.round(value * 100) / 100,
+      })),
+    ];
 
     const totalsByCategory = Array.from(byCategory.entries())
       .map(([category, total]) => ({
